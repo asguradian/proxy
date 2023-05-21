@@ -1,32 +1,29 @@
 package com.anil.proxy.apis;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
 
-@RestController
-@OpenAPIDefinition(info = @Info(title = "Test service API", version = "1.0", description = "Test service"))
+@Path("{seg:.*}")
+@Component
 public class StaticAssetService extends  AbstractService {
     @Autowired
-    private RestTemplate restTemplate;
-    private ObjectMapper mapper = new ObjectMapper();
-
+    private Client client;
     @Value("${enginxUrl}")
     private String downStreamUrl;
 
 
-    @GetMapping(value = "/*")
-    public ResponseEntity staticAssets(HttpServletRequest request) throws  Exception {
-        return proxy(request,null, HttpMethod.GET, String.class );
-
+    @GET
+    public Response staticAssets(@Context  HttpServletRequest request, @Context HttpHeaders headers) throws  Exception {
+          return proxy(request,new ByteArrayInputStream(new byte[0]),headers);
     }
 
     @Override
@@ -35,8 +32,8 @@ public class StaticAssetService extends  AbstractService {
     }
 
     @Override
-    protected RestTemplate getTemplate() {
-        return this.restTemplate;
+    protected Client getHttpClient() {
+        return this.client;
     }
 
 }

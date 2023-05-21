@@ -1,34 +1,40 @@
 package com.anil.proxy.apis;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import javax.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Component;
 
-@RestController
-@OpenAPIDefinition(info = @Info(title = "Test service API", version = "1.0", description = "Test service"))
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
+
+@Path("/service/{var:.*}")
+@Component
 public class ProxyService extends  AbstractService {
     @Autowired
-    private RestTemplate restTemplate;
-    private ObjectMapper mapper = new ObjectMapper();
-
+    private Client client;
     @Value("${enginxUrl}")
     private String downStreamUrl;
 
 
-    @GetMapping(value = "/service/*")
-    public ResponseEntity service(String payload,HttpServletRequest request) throws  Exception {
-        return proxy(request, payload,HttpMethod.GET, String.class);
+    @GET
+    @Path("/")
+    public Response service(@Context HttpHeaders httpHeaders, @Context HttpServletRequest request) throws  Exception {
+
+        return proxy(request,new ByteArrayInputStream(new byte[0]),httpHeaders);
 
     }
-    @RequestMapping(value = "/service/*", method = RequestMethod.POST)
-    public ResponseEntity postService(@RequestBody String payload, HttpServletRequest request) throws Exception {
-        return proxy(request, payload,HttpMethod.POST, String.class);
+    @POST
+    @Path("/")
+    public Response postService( @Context  HttpServletRequest request,@Context HttpHeaders httpHeaders, InputStream inputStream) throws Exception {
+        return proxy(request,inputStream,httpHeaders);
     }
 
     @Override
@@ -37,7 +43,7 @@ public class ProxyService extends  AbstractService {
     }
 
     @Override
-    protected RestTemplate getTemplate() {
-        return this.restTemplate;
+    protected Client getHttpClient() {
+        return this.client;
     }
 }

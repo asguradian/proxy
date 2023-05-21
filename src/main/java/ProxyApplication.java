@@ -5,7 +5,9 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.Resource;
@@ -15,6 +17,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -25,7 +29,7 @@ import java.util.Arrays;
 
 @ComponentScan(basePackages = "com.anil")
 @SpringBootApplication
-public class ProxyApplication {
+public class ProxyApplication  extends SpringBootServletInitializer {
 	@Value("${key-store}")
 	private Resource keyStore;
 
@@ -40,28 +44,25 @@ public class ProxyApplication {
 
 
 	public static void main(String[] args) {
-		SpringApplication.run(ProxyApplication.class, args);
+
+		new ProxyApplication().configure(new SpringApplicationBuilder(ProxyApplication.class)).run(args);
 	}
 
+
+	private SSLContext getSslContext () throws Exception{
+			SSLContext sslContext = new SSLContextBuilder()
+			.loadKeyMaterial(keyStore.getURL(), keyStorePassword.toCharArray(), keyStorePassword.toCharArray(), (aliases, socket) -> "client")
+			.loadTrustMaterial(trustStore.getURL(), trustStorePassword.toCharArray())
+			.build();
+			return sslContext;
+	}
+
+
 	@Bean
-	public RestTemplate restTemplate(RestTemplateBuilder builder) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
-		SSLContext sslContext = new SSLContextBuilder()
-				.loadKeyMaterial(keyStore.getURL(), keyStorePassword.toCharArray(), keyStorePassword.toCharArray(), (aliases, socket) -> "client")
-				.loadTrustMaterial(trustStore.getURL(), trustStorePassword.toCharArray())
-				.build();
-		SSLConnectionSocketFactory socketFactory = new SSLConnectionSocketFactory(sslContext);
-
-		HttpClient httpClient = HttpClients.custom()
-				.setSSLSocketFactory(socketFactory)
-				.build();
-
-		RestTemplate restTemplate = builder
-				.requestFactory(() -> new HttpComponentsClientHttpRequestFactory(httpClient))
-				.build();
-		MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-		converter.setSupportedMediaTypes(Arrays.asList(MediaType.TEXT_PLAIN));
-		restTemplate.getMessageConverters().add(converter);
-        return restTemplate;
+	public Client getJaxRSClient() throws  Exception {
+		Client client = ClientBuilder.newBuilder()
+				 .sslContext(getSslContext()).build();
+		return client;
 	}
 }
 
