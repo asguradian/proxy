@@ -1,5 +1,3 @@
-package com.anil.proxy;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClients;
@@ -25,7 +23,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 
-@ComponentScan(basePackages = "com.example")
+@ComponentScan(basePackages = "com.anil")
 @SpringBootApplication
 public class ProxyApplication {
 	@Value("${key-store}")
